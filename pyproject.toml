@@ -1,0 +1,40 @@
+[project]
+name = "early-mcp"
+version = "1.0.0"
+description = "Complete MCP server for Early (Timeular) time tracking API"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Lukas Weichselbaum", email = "lukas@lukasweichselbaum.com"}
+]
+keywords = ["mcp", "early", "timeular", "time-tracking", "claude", "anthropic"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.25.0",
+    "mcp>=1.0.0",
+    "pydantic>=2.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/weichselbaum/early-mcp"
+Repository = "https://github.com/weichselbaum/early-mcp"
+Issues = "https://github.com/weichselbaum/early-mcp/issues"
+
+[project.scripts]
+early-mcp = "early_mcp:mcp.run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]

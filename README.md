@@ -1,201 +1,122 @@
 # Early MCP Server
 
-A complete Model Context Protocol (MCP) server for [Early](https://early.app) (formerly Timeular) time tracking API v4.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-## Features
+A complete [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for [Early](https://early.app) (formerly Timeular) time tracking API v4.
 
-**42 tools** covering the complete Early API:
+Use natural language to track time, manage activities, generate reports, and more—directly from Claude.
 
-### User & Authentication
-- `early_get_me` - Get current user info
-- `early_list_users` - List all team users
+## Quick Start
 
-### Time Tracking
-- `early_get_tracking` - Get current running timer
-- `early_start_tracking` - Start a timer
-- `early_stop_tracking` - Stop timer and create entry
-- `early_edit_tracking` - Edit running timer
-- `early_cancel_tracking` - Cancel without saving
+### 1. Get API Credentials
 
-### Time Entries
-- `early_list_time_entries` - List entries in date range
-- `early_get_time_entry` - Get single entry
-- `early_create_time_entry` - Create manual entry
-- `early_edit_time_entry` - Edit entry
-- `early_delete_time_entry` - Delete entry
+1. Go to [Early App](https://product.early.app) → Settings → Integrations → API Access
+2. Generate your API Key and API Secret
 
-### Activities
-- `early_list_activities` - List all activities
-- `early_create_activity` - Create activity
-- `early_edit_activity` - Edit activity
-- `early_archive_activity` - Archive activity
-- `early_unarchive_activity` - Restore activity
+### 2. Install
 
-### Folders
-- `early_list_folders` - List all folders
-- `early_get_folder` - Get folder details
-- `early_create_folder` - Create folder
-- `early_edit_folder` - Edit folder name
-- `early_archive_folder` - Archive folder
-- `early_unarchive_folder` - Restore folder
-- `early_list_folder_members` - List folder members
-- `early_get_folder_member` - Get member details
-- `early_add_folder_member` - Add member by email
-- `early_remove_folder_member` - Remove member
-
-### Tags & Mentions
-- `early_list_tags` - List all tags and mentions
-- `early_create_tag` - Create tag
-- `early_update_tag` - Update tag label
-- `early_delete_tag` - Delete tag
-- `early_create_mention` - Create mention
-- `early_update_mention` - Update mention label
-- `early_delete_mention` - Delete mention
-
-### Leaves (Time Off)
-- `early_create_leave` - Create leave request
-- `early_create_leave_for_user` - Create leave for team member
-- `early_approve_leave` - Approve leave (Admin/Owner)
-- `early_deny_leave` - Deny leave (Admin/Owner)
-- `early_delete_leave` - Delete leave
-
-### Webhooks
-- `early_list_webhook_events` - List available events
-- `early_list_webhook_subscriptions` - List subscriptions
-- `early_subscribe_webhook` - Subscribe to event
-- `early_unsubscribe_webhook` - Unsubscribe
-- `early_unsubscribe_all_webhooks` - Unsubscribe all
-
-### Reports
-- `early_generate_report` - Generate time report
-- `early_today_summary` - Today's summary
-
-## Installation
-
-### Prerequisites
-- Python 3.10+
-- Early API credentials (get from [Early Settings](https://product.early.app))
-
-### Setup
-
-1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/early-mcp.git
+git clone https://github.com/weichselbaum/early-mcp.git
 cd early-mcp
-```
-
-2. Create virtual environment:
-```bash
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Get your API credentials:
-   - Go to [Early Settings](https://product.early.app) → Integrations → API Access
-   - Generate API Key and API Secret
+### 3. Configure Claude Desktop
 
-## Configuration
+Add to your Claude Desktop config file:
 
-### Claude Desktop
-
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`  
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "early": {
-      "command": "/path/to/early-mcp/venv/bin/python",
-      "args": ["/path/to/early-mcp/early_mcp.py"],
+      "command": "/absolute/path/to/early-mcp/venv/bin/python",
+      "args": ["/absolute/path/to/early-mcp/early_mcp.py"],
       "env": {
-        "EARLY_API_KEY": "your_api_key",
-        "EARLY_API_SECRET": "your_api_secret"
+        "EARLY_API_KEY": "your_api_key_here",
+        "EARLY_API_SECRET": "your_api_secret_here"
       }
     }
   }
 }
 ```
 
-### Environment Variables
+### 4. Restart Claude Desktop
 
-Alternatively, set environment variables:
-```bash
-export EARLY_API_KEY="your_api_key"
-export EARLY_API_SECRET="your_api_secret"
-```
+The Early tools should now appear in Claude.
 
 ## Usage Examples
 
-### Start tracking
-```
-Start tracking on my "Work" activity
-```
+**Start tracking:**
+> "Start tracking on LWX"
 
-### Check current timer
-```
-What am I tracking right now?
-```
+**Check current timer:**
+> "What am I working on?"
 
-### Stop with note
-```
-Stop tracking and add note "Finished feature implementation"
-```
+**Stop with note:**
+> "Stop tracking, note: finished feature implementation"
 
-### Create time entry
-```
-Log 2 hours on "Meeting" activity yesterday from 2pm to 4pm
-```
+**Log time manually:**
+> "Log 2 hours on Meeting yesterday from 2pm to 4pm"
 
-### Generate report
-```
-Show me my time report for last week
-```
+**Weekly report:**
+> "Show me my time report for last week"
 
-### Manage tags
-```
-Create a new tag called "urgent" in my Income folder
-```
+**Manage tags:**
+> "Create a tag called 'urgent' in my Income folder"
+
+## Features
+
+**46 tools** covering the complete Early API:
+
+| Category | Tools | Description |
+|----------|-------|-------------|
+| **User** | 2 | Get current user, list team users |
+| **Tracking** | 5 | Start, stop, edit, cancel, get current |
+| **Time Entries** | 5 | List, get, create, edit, delete |
+| **Activities** | 5 | List, create, edit, archive, unarchive |
+| **Folders** | 10 | Full CRUD + member management |
+| **Tags** | 4 | List, create, update, delete |
+| **Mentions** | 3 | Create, update, delete |
+| **Leaves** | 5 | Create, approve, deny, delete |
+| **Webhooks** | 5 | List events, subscribe, unsubscribe |
+| **Reports** | 2 | Generate report, today summary |
 
 ## API Notes
 
 ### Time Formats
-- All times use ISO 8601 format: `2024-01-15T14:30:00.000`
-- Minimum time entry duration: 1 minute
+All times use ISO 8601: `2024-01-15T14:30:00.000`
+
+### Minimum Duration
+Time entries require at least 1 minute duration.
 
 ### Tags & Mentions in Notes
-Use special syntax in notes:
+Special syntax for notes:
 - Tags: `<{{|t|TAG_ID|}}>`
 - Mentions: `<{{|m|MENTION_ID|}}>`
 
-Example: `Working on feature <{{|t|123|}}> with <{{|m|456|}}>`
-
-### Webhooks
-- Target URLs must be HTTPS and publicly reachable
-- 10 second timeout
-- Auto-unsubscribes on 410 Gone response
-
 ## Development
 
-### Run locally
 ```bash
+# Run locally
 python early_mcp.py
-```
 
-### Test with MCP Inspector
-```bash
+# Test with MCP Inspector
 npx @modelcontextprotocol/inspector python early_mcp.py
 ```
 
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE)
 
 ## Links
 
 - [Early App](https://early.app)
-- [Early API Documentation](https://developers.early.app)
+- [Early API Docs](https://developers.early.app)
 - [MCP Protocol](https://modelcontextprotocol.io)
+- [Claude Desktop](https://claude.ai/download)
