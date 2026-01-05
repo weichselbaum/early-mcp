@@ -11,8 +11,9 @@ Use natural language to track time, manage activities, generate reports, and mor
 
 ### 1. Get API Credentials
 
-1. Go to [Early App](https://product.early.app) → Settings → Integrations → API Access
-2. Generate your API Key and API Secret
+1. Go to [Early Account Settings](https://product.early.app/#/settings/account)
+2. Scroll to the bottom to find the **API** section
+3. Generate your API Key and API Secret
 
 ### 2. Install
 
@@ -113,6 +114,17 @@ npx @modelcontextprotocol/inspector python early_mcp.py
 ## License
 
 MIT - see [LICENSE](LICENSE)
+
+## API Documentation
+
+The `docs/` folder contains reference documentation for developers who want to understand the Early API or build custom implementations:
+
+- **EARLY_API_V4_REFERENCE.md** - Markdown reference covering all endpoints, parameters, and response formats
+- **early_api_v4_collection.json** - Full Postman collection export
+
+### How the docs were sourced
+
+The JSON collection was exported from [Early's official Postman workspace](https://developers.early.app). Click "Run in Postman" (top right), fork the collection to your own workspace, then export as JSON. The collection is maintained by Timeular (Early's parent company).
 
 ## Links
 
