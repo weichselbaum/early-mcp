@@ -132,3 +132,7 @@ The JSON collection was exported from [Early's official Postman workspace](https
 - [Early API Docs](https://developers.early.app)
 - [MCP Protocol](https://modelcontextprotocol.io)
 - [Claude Desktop](https://claude.ai/download)
+
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for planned features and ideas. Feedback welcome!
