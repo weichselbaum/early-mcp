@@ -8,7 +8,7 @@ Future features and improvements for Early MCP Server. Contributions and feedbac
 - [ ] **Keychain/credential manager support** - Optional secure storage for API keys using system keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service) instead of environment variables
 
 ### Multi-Account
-- [ ] **Account switching** - Manage multiple Early accounts (personal/work/client) in same session, useful for agencies or consultants tracking time across different organizations
+- [ ] **Account switching** - Manage multiple Early accounts in same session, useful for team administrators who need to access and report on employee time data
 
 ### Developer Experience
 - [ ] **Verbose/debug mode** - Better logging for troubleshooting
