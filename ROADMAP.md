@@ -7,8 +7,10 @@ Future features and improvements for Early MCP Server. Contributions and feedbac
 ### Security
 - [ ] **Keychain/credential manager support** - Optional secure storage for API keys using system keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service) instead of environment variables
 
+### Multi-Account
+- [ ] **Account switching** - Manage multiple Early accounts (personal/work/client) in same session, useful for agencies or consultants tracking time across different organizations
+
 ### Developer Experience
-- [ ] **Docker image** - One-line setup without Python environment
 - [ ] **Verbose/debug mode** - Better logging for troubleshooting
 
 ## Ideas (Need Feedback)
@@ -16,7 +18,6 @@ Future features and improvements for Early MCP Server. Contributions and feedbac
 These might be useful but need validation:
 
 - **Offline queue** - Buffer commands when API is unreachable, sync when back online
-- **Multi-account** - Switch between personal/work Early accounts in same session
 - **CSV export tool** - Dedicated tool that outputs report data as CSV (vs Claude formatting it)
 
 ---
