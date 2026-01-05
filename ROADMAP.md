@@ -8,7 +8,6 @@ Future features and improvements for Early MCP Server. Contributions and feedbac
 - [ ] **Keychain/credential manager support** - Optional secure storage for API keys using system keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service) instead of environment variables
 
 ### Usability
-- [ ] **Smarter time parsing** - Natural language like "yesterday 2-4pm" or "last Tuesday morning"
 - [ ] **Activity fuzzy matching** - Find activities by partial name match instead of exact ID
 - [ ] **Default activity** - Set a fallback activity for quick "just start tracking" commands
 
@@ -19,7 +18,6 @@ Future features and improvements for Early MCP Server. Contributions and feedbac
 
 ### Integrations
 - [ ] **Calendar sync** - Cross-reference time entries with calendar events
-- [ ] **Pomodoro mode** - Built-in timer with break reminders
 - [ ] **Slack status sync** - Update Slack status based on current activity
 
 ### Developer Experience
