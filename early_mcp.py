@@ -172,11 +172,11 @@ class EditActivityInput(BaseModel):
 class ReportInput(BaseModel):
     """Report generation parameters."""
     model_config = ConfigDict(extra='forbid')
-    start_date: str = Field(..., description="Start date (YYYY-MM-DD)")
-    end_date: str = Field(..., description="End date (YYYY-MM-DD)")
-    activity_ids: Optional[List[str]] = Field(default=None, description="Filter by activity IDs")
-    folder_ids: Optional[List[str]] = Field(default=None, description="Filter by folder IDs")
-    user_ids: Optional[List[str]] = Field(default=None, description="Filter by user IDs")
+    start_date: str = Field(..., description="Inclusive start date, format YYYY-MM-DD (e.g. 2024-07-01). No time component.")
+    end_date: str = Field(..., description="Inclusive end date, format YYYY-MM-DD (e.g. 2024-07-31). No time component.")
+    activity_ids: Optional[List[str]] = Field(default=None, description="Optional. Restrict to these activity IDs (from early_list_activities). Omit for all activities.")
+    folder_ids: Optional[List[str]] = Field(default=None, description="Optional. Restrict to these folder IDs (from early_list_folders). Omit for all folders.")
+    user_ids: Optional[List[str]] = Field(default=None, description="Optional. Restrict to these team member user IDs (from early_list_users). Omit to include every member you have Full folder access to. Other members' entries are only visible with Full access.")
 
 
 # Tag & Mention Models
@@ -550,7 +550,16 @@ async def early_cancel_tracking(params: EmptyInput) -> str:
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True}
 )
 async def early_list_time_entries(params: TimeRangeInput) -> str:
-    """List time entries in a date range."""
+    """List individual time entries in a date range for the AUTHENTICATED account only.
+
+    This is personal-scope: it cannot return other team members' entries and does
+    not accept a user filter. For team-wide data use early_generate_report
+    (aggregated, supports user_ids) or early_analyze_time_distribution
+    (per-user x activity breakdown). Delivers a list of entries with activity
+    name, start/stop, duration, note, and entry ID, plus a total. Timestamps are
+    UTC and this endpoint returns no per-entry timezone, so convert to the
+    account's known local timezone before any time-of-day reasoning.
+    """
     try:
         now = datetime.now()
         if params.start:
@@ -569,7 +578,12 @@ async def early_list_time_entries(params: TimeRangeInput) -> str:
         if not entries:
             return f"No time entries found between {start} and {end}."
         
-        lines = [f"## Time Entries ({start[:10]} to {end[:10]})", ""]
+        lines = [
+            f"## Time Entries ({start[:10]} to {end[:10]})",
+            "",
+            "_Timestamps are UTC (no per-entry timezone available; convert via the account's own timezone)._",
+            "",
+        ]
         total_seconds = 0
         
         for e in entries:
@@ -590,7 +604,7 @@ async def early_list_time_entries(params: TimeRangeInput) -> str:
                 pass
             
             lines.append(f"**{activity.get('name', '?')}** - {dur_str}")
-            lines.append(f"  {started[:16]} → {stopped[11:16]} (ID: {e.get('id', '?')})")
+            lines.append(f"  {started[:16]} → {stopped[11:16]} UTC (ID: {e.get('id', '?')})")
             if note_text:
                 lines.append(f"  Note: {note_text[:100]}")
             lines.append("")
@@ -1159,7 +1173,13 @@ async def early_unsubscribe_all_webhooks(params: EmptyInput) -> str:
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True}
 )
 async def early_generate_report(params: ReportInput) -> str:
-    """Generate a time tracking report with aggregated data."""
+    """Generate a time tracking report with aggregated data.
+
+    Breaks down totals by activity, and by user when entries from multiple
+    team members are present. Omit user_ids to include every entry you have
+    Full access to across folders; pass user_ids to scope to specific members.
+    Seeing other members' entries requires Full access to their folder.
+    """
     try:
         body = {
             "date": {"start": params.start_date, "end": params.end_date},
@@ -1179,22 +1199,36 @@ async def early_generate_report(params: ReportInput) -> str:
             return f"No entries in report for {params.start_date} to {params.end_date}."
         
         by_activity = {}
+        by_user = {}
         total_seconds = 0
         
         for e in entries:
             activity_name = e.get("activity", {}).get("name", "Unknown")
+            user = e.get("user") or {}
+            user_label = user.get("name") or user.get("email") or "Unknown"
             duration = e.get("duration", {})
             try:
                 s = datetime.fromisoformat(duration["startedAt"].split(".")[0])
                 t = datetime.fromisoformat(duration["stoppedAt"].split(".")[0])
                 secs = int((t - s).total_seconds())
                 by_activity[activity_name] = by_activity.get(activity_name, 0) + secs
+                by_user[user_label] = by_user.get(user_label, 0) + secs
                 total_seconds += secs
             except:
                 pass
         
         lines = [f"## Report: {params.start_date} to {params.end_date}", ""]
         
+        if len(by_user) > 1:
+            lines.append("### By User")
+            for name, secs in sorted(by_user.items(), key=lambda x: -x[1]):
+                h, rem = divmod(secs, 3600)
+                m = rem // 60
+                pct = (secs / total_seconds * 100) if total_seconds else 0
+                lines.append(f"- **{name}**: {h}h {m}m ({pct:.1f}%)")
+            lines.append("")
+        
+        lines.append("### By Activity")
         for name, secs in sorted(by_activity.items(), key=lambda x: -x[1]):
             h, rem = divmod(secs, 3600)
             m = rem // 60
@@ -1203,8 +1237,218 @@ async def early_generate_report(params: ReportInput) -> str:
         
         total_h, total_rem = divmod(total_seconds, 3600)
         total_m = total_rem // 60
-        lines.append(f"\n**Total: {total_h}h {total_m}m** ({len(entries)} entries)")
+        user_note = f", {len(by_user)} users" if len(by_user) > 1 else ""
+        lines.append(f"\n**Total: {total_h}h {total_m}m** ({len(entries)} entries{user_note})")
         
+        return "\n".join(lines)
+    except Exception as e:
+        return handle_error(e)
+
+
+@mcp.tool(
+    name="early_analyze_time_distribution",
+    annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True}
+)
+async def early_analyze_time_distribution(params: ReportInput) -> str:
+    """Return a structured per-user x per-activity time breakdown for anomaly analysis.
+
+    This tool intentionally applies NO fixed thresholds. It returns the raw
+    distribution (hours and each user's share of their own time per activity)
+    plus team baselines so the calling LLM can reason about odd patterns, e.g.
+    a member booking unusually high time on a given activity vs the team.
+    Omit user_ids to include every entry you have Full access to; pass user_ids
+    to scope to specific members. Seeing other members' entries requires Full
+    access to their folder.
+    """
+    try:
+        body = {
+            "date": {"start": params.start_date, "end": params.end_date},
+            "fileType": "json"
+        }
+        if params.activity_ids:
+            body["activities"] = {"ids": params.activity_ids}
+        if params.folder_ids:
+            body["folders"] = {"ids": params.folder_ids}
+        if params.user_ids:
+            body["users"] = {"ids": params.user_ids}
+
+        data = await api_request("POST", "/report", body)
+        entries = data.get("timeEntries", [])
+
+        if not entries:
+            return f"No entries in report for {params.start_date} to {params.end_date}."
+
+        matrix = {}
+        user_totals = {}
+        activity_totals = {}
+
+        for e in entries:
+            user = e.get("user") or {}
+            user_label = user.get("name") or user.get("email") or "Unknown"
+            activity_name = e.get("activity", {}).get("name", "Unknown")
+            duration = e.get("duration", {})
+            try:
+                s = datetime.fromisoformat(duration["startedAt"].split(".")[0])
+                t = datetime.fromisoformat(duration["stoppedAt"].split(".")[0])
+                secs = int((t - s).total_seconds())
+            except:
+                continue
+            matrix.setdefault(user_label, {})
+            matrix[user_label][activity_name] = matrix[user_label].get(activity_name, 0) + secs
+            user_totals[user_label] = user_totals.get(user_label, 0) + secs
+            activity_totals[activity_name] = activity_totals.get(activity_name, 0) + secs
+
+        users = sorted(matrix)
+        activities = sorted(activity_totals, key=lambda a: -activity_totals[a])
+        grand_total = sum(user_totals.values())
+
+        def hours(secs):
+            return secs / 3600
+
+        lines = [f"## Time Distribution: {params.start_date} to {params.end_date}", ""]
+        lines.append(
+            f"{len(entries)} entries, {len(users)} users, {len(activities)} activities, "
+            f"{hours(grand_total):.1f}h total"
+        )
+        lines.append("")
+
+        lines.append("### Per-user x activity (hours, share of user's own time)")
+        header = "| User | " + " | ".join(activities) + " | Total |"
+        separator = "|" + "---|" * (len(activities) + 2)
+        lines.append(header)
+        lines.append(separator)
+        for u in users:
+            user_total = user_totals[u]
+            cells = []
+            for a in activities:
+                secs = matrix[u].get(a, 0)
+                if secs and user_total:
+                    cells.append(f"{hours(secs):.1f}h ({secs / user_total * 100:.0f}%)")
+                else:
+                    cells.append("-")
+            lines.append(f"| {u} | " + " | ".join(cells) + f" | {hours(user_total):.1f}h |")
+        lines.append("")
+
+        lines.append("### Team baseline per activity")
+        for a in activities:
+            shares = [matrix[u].get(a, 0) / user_totals[u] for u in users if user_totals[u] > 0]
+            avg_share = (sum(shares) / len(shares) * 100) if shares else 0
+            avg_hours = hours(activity_totals[a]) / len(users) if users else 0
+            pct_grand = (activity_totals[a] / grand_total * 100) if grand_total else 0
+            lines.append(
+                f"- **{a}**: {hours(activity_totals[a]):.1f}h total, "
+                f"avg {avg_hours:.1f}h/user, avg {avg_share:.0f}% of own time, "
+                f"{pct_grand:.0f}% of grand total"
+            )
+
+        return "\n".join(lines)
+    except Exception as e:
+        return handle_error(e)
+
+
+@mcp.tool(
+    name="early_export_raw_entries_for_range",
+    annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True}
+)
+async def early_export_raw_entries_for_range(params: ReportInput) -> str:
+    """Export RAW individual time entries for a date range, grouped by user.
+
+    Unlike early_generate_report / early_analyze_time_distribution (which
+    aggregate), this returns every entry's date, start, stop, duration, activity,
+    note, and entry ID so an LLM can spot fine-grained patterns (time-of-day,
+    weekend work, suspicious durations, note content). Entries are grouped per
+    user and sorted chronologically. Timestamps are UTC (no offset); each entry
+    includes its tracking timezone, so convert UTC to that zone before reasoning
+    about time-of-day or weekday/weekend. Each user's header summarizes their
+    tracking timezone(s) - a hint about location - and flags users tracking across
+    multiple timezones (possible travel/relocation).
+
+    Omit user_ids to include every member you have Full folder access to; pass
+    user_ids to scope to specific members. Seeing other members' entries requires
+    Full access to their folder. Large date ranges or teams can produce long
+    output; narrow the range or filter to keep responses manageable.
+    """
+    try:
+        body = {
+            "date": {"start": params.start_date, "end": params.end_date},
+            "fileType": "json"
+        }
+        if params.activity_ids:
+            body["activities"] = {"ids": params.activity_ids}
+        if params.folder_ids:
+            body["folders"] = {"ids": params.folder_ids}
+        if params.user_ids:
+            body["users"] = {"ids": params.user_ids}
+
+        data = await api_request("POST", "/report", body)
+        entries = data.get("timeEntries", [])
+
+        if not entries:
+            return f"No entries in report for {params.start_date} to {params.end_date}."
+
+        by_user = {}
+        for e in entries:
+            user = e.get("user") or {}
+            label = user.get("name") or user.get("email") or "Unknown"
+            by_user.setdefault(label, []).append(e)
+
+        lines = [
+            f"## Team Time Entries Export: {params.start_date} to {params.end_date}",
+            "",
+            f"{len(entries)} entries across {len(by_user)} users",
+            "",
+            "_Timestamps are UTC. Each entry shows its tracking timezone (tz=...); "
+            "convert UTC to that zone before reasoning about time-of-day or weekday/weekend._",
+            "",
+        ]
+
+        for label in sorted(by_user):
+            user_entries = by_user[label]
+            user_entries.sort(key=lambda e: e.get("duration", {}).get("startedAt", ""))
+
+            total_seconds = 0
+            tz_counts = {}
+            rendered = []
+            for e in user_entries:
+                duration = e.get("duration", {})
+                started = duration.get("startedAt", "")
+                stopped = duration.get("stoppedAt", "")
+                activity = e.get("activity", {}).get("name", "?")
+                tz = e.get("timezone") or "?"
+                tz_counts[tz] = tz_counts.get(tz, 0) + 1
+                note = e.get("note") or {}
+                note_text = note.get("text", "") if note else ""
+
+                dur_str = format_duration(started, stopped)
+                try:
+                    s = datetime.fromisoformat(started.split(".")[0])
+                    t = datetime.fromisoformat(stopped.split(".")[0])
+                    total_seconds += int((t - s).total_seconds())
+                except:
+                    pass
+
+                line = (
+                    f"- {started[:10]} {started[11:16]}\u2192{stopped[11:16]} UTC "
+                    f"({dur_str}) **{activity}** [id: {e.get('id', '?')}, tz={tz}]"
+                )
+                if note_text:
+                    line += f" \u2014 {note_text[:120]}"
+                rendered.append(line)
+
+            total_h, rem = divmod(total_seconds, 3600)
+            total_m = rem // 60
+            user = (user_entries[0].get("user") or {})
+            email = user.get("email", "")
+            email_part = f" ({email})" if email else ""
+            tz_summary = ", ".join(
+                f"{z} ({c})" for z, c in sorted(tz_counts.items(), key=lambda x: -x[1])
+            )
+            tz_flag = " ⚠ multiple timezones" if len(tz_counts) > 1 else ""
+            lines.append(f"### {label}{email_part} \u2014 {len(user_entries)} entries, {total_h}h {total_m}m")
+            lines.append(f"_timezones: {tz_summary}{tz_flag}_")
+            lines.extend(rendered)
+            lines.append("")
+
         return "\n".join(lines)
     except Exception as e:
         return handle_error(e)

@@ -68,12 +68,18 @@ The Early tools should now appear in Claude.
 **Weekly report:**
 > "Show me my time report for last week"
 
+**Team report (per-user breakdown):**
+> "Generate a report for the whole team for May, broken down by member"
+
+**Find odd patterns:**
+> "Analyze our time distribution for Q2 and flag anyone booking unusually high time on Organisation compared to the team"
+
 **Manage tags:**
 > "Create a tag called 'urgent' in my Income folder"
 
 ## Features
 
-**46 tools** covering the complete Early API:
+**48 tools** covering the complete Early API:
 
 | Category | Tools | Description |
 |----------|-------|-------------|
@@ -86,12 +92,14 @@ The Early tools should now appear in Claude.
 | **Mentions** | 3 | Create, update, delete |
 | **Leaves** | 5 | Create, approve, deny, delete |
 | **Webhooks** | 5 | List events, subscribe, unsubscribe |
-| **Reports** | 2 | Generate report, today summary |
+| **Reports** | 4 | Generate report (with per-user breakdown), analyze time distribution, export raw entries for range, today summary |
 
 ## API Notes
 
 ### Time Formats
 All times use ISO 8601: `2024-01-15T14:30:00.000`
+
+Time entry timestamps are **UTC** (no offset suffix). Report-based tools (`early_generate_report`, `early_analyze_time_distribution`, `early_export_raw_entries_for_range`) return a per-entry `timezone` (e.g. `Europe/Berlin`, or `Z` for UTC) - convert UTC to that zone before reasoning about time-of-day or weekday/weekend. The personal `early_list_time_entries` endpoint returns no per-entry timezone.
 
 ### Minimum Duration
 Time entries require at least 1 minute duration.
@@ -100,6 +108,11 @@ Time entries require at least 1 minute duration.
 Special syntax for notes:
 - Tags: `<{{|t|TAG_ID|}}>`
 - Mentions: `<{{|m|MENTION_ID|}}>`
+
+### Personal vs. Team Scope
+- `early_list_time_entries` is **personal-scope**: it returns only the authenticated account's individual entries and does not accept a user filter.
+- For team-wide data use `early_generate_report` (aggregated, optional `user_ids`, per-user breakdown when multiple members are present), `early_analyze_time_distribution` (per-user x activity matrix with team baselines), or `early_export_raw_entries_for_range` (raw individual entries grouped per user, for fine-grained pattern analysis).
+- Seeing other members' entries requires **Full access** to their folder. Omit `user_ids` to include every member you have Full access to.
 
 ## Development
 
