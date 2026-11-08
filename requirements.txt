@@ -1,3 +1,14 @@
 httpx>=0.25.0
-mcp>=1.0.0
+# mcp 2.x removed FastMCP. 1.30.0 is the newest 1.x and clears the SDK advisories.
+mcp>=1.30.0,<2
 pydantic>=2.0.0
+# Transitive security floors. These are the minimum releases that fix the
+# critical/high advisories still allowed by the ranges above, plus the
+# python-multipart fix requested for CVE-2026-53540.
+anyio>=4.14.2
+certifi>=2026.10.18
+cryptography>=50.0.0
+h11>=0.16.0
+pyjwt>=2.14.0
+python-multipart>=0.0.31
+starlette>=1.3.1
